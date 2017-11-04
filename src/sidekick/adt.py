@@ -56,9 +56,9 @@ class State:
     def __or__(self, other):
         bases = self._default_bases
         if isinstance(other, State):
-            return UnionMeta._from_states([self, other], bases)
+            return Node._from_states([self, other], bases)
         elif other is None or other is ...:
-            return UnionMeta._from_states([self], bases)
+            return Node._from_states([self], bases)
         return NotImplemented
 
     def __ror__(self, other):
@@ -292,6 +292,89 @@ class Union(metaclass=UnionMeta):
             raise ValueError('invalid patterns: %s' % (keys - names))
         else:
             raise ValueError('missing patterns: %s' % (names - keys))
+
+class Node(metaclass=UnionMeta):
+    """
+    Union argtypes (Abstract data types) for Python
+    """
+
+    __slots__ = '_args', '_id'
+    _states = ()
+    _names_set = frozenset()
+    _id_to_names = {}
+
+    def __init__(self, id, *args):
+        self._id = id
+        self._args = args
+
+    def __repr__(self):
+        name = self._states[self._id].name
+        args = self._args
+
+        if args:
+            return '%s(%s)' % (name, ', '.join(map(str, args)))
+        return name
+
+    def __eq__(self, other):
+        if self.__class__ is other.__class__:
+            return self._id == other._id and self._args == other._args
+        return NotImplemented
+
+    def __hash__(self):
+        return hash((self._id, self._args))
+
+    def match(self, **kwargs):
+        """
+        Execute pattern match.
+        """
+
+        names = self._names_set
+        id_to_names = self._id_to_names
+        keys = kwargs.keys()
+
+        if keys == names:
+            name = id_to_names[self._id]
+            func = kwargs[name]
+            return func(*self._args)
+
+        if len(keys) > len(names):
+            raise ValueError('invalid patterns: %s' % (keys - names))
+        else:
+            raise ValueError('missing patterns: %s' % (names - keys))
+
+    def pretty_print(self):
+        visited_nodes = {}
+        nodes_to_visit = []
+        id = 1
+        depth = 1
+        root_node = (self, None, depth)
+
+        nodes_to_visit.append(root_node)
+
+        while len(nodes_to_visit) != 0:
+            node_tuple = nodes_to_visit.pop()
+            node = node_tuple[0]
+            node_depth = node_tuple[2]
+
+            if isinstance(node, Node):
+                if isinstance(node_tuple[1], Node):
+                    father_node = node_tuple[1]._states[node_tuple[1]._id].name
+                else:
+                    father_node = "None"
+
+                printed_tuple = (node._states[node._id].name, father_node,node_tuple[2])
+                print((node_depth * 4) * " ","|_",printed_tuple)
+                if isinstance(node._args[0], list):
+                    arg_list = node._args[0]
+                    for child_node in arg_list[::-1]:
+                        nodes_to_visit.append((child_node, node, node_depth + 1))
+                else:
+                    for child_node in node._args[::-1]:
+                        nodes_to_visit.append((child_node, node, node_depth + 1))
+
+            else:
+                printed_tuple = (node_tuple[0],node_tuple[1],node_tuple[2])
+                print((node_depth * 4) * " ","|_",printed_tuple)
 
 
 #
