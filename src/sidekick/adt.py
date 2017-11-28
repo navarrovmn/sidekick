@@ -342,40 +342,35 @@ class Node(metaclass=UnionMeta):
         else:
             raise ValueError('missing patterns: %s' % (names - keys))
 
-    def pretty_print(self):
-        visited_nodes = {}
-        nodes_to_visit = []
-        id = 1
-        depth = 1
-        root_node = (self, None, depth)
+def pretty_print(self):
+    visited_nodes = {}
+    nodes_to_visit = []
+    id = 1
+    depth = 1
+    root_node = (self, depth)
 
-        nodes_to_visit.append(root_node)
+    nodes_to_visit.append(root_node)
 
-        while len(nodes_to_visit) != 0:
-            node_tuple = nodes_to_visit.pop()
-            node = node_tuple[0]
-            node_depth = node_tuple[2]
+    while len(nodes_to_visit) != 0:
+        node_tuple = nodes_to_visit.pop()
+        node = node_tuple[0]
+        node_depth = node_tuple[1]
 
-            if isinstance(node, Node):
-                if isinstance(node_tuple[1], Node):
-                    father_node = node_tuple[1]._states[node_tuple[1]._id].name
-                else:
-                    father_node = "None"
+        if isinstance(node, Node):
 
-                printed_tuple = (node._states[node._id].name, father_node,node_tuple[2])
-                print((node_depth * 4) * " ","|_",printed_tuple)
-                if isinstance(node._args[0], list):
-                    arg_list = node._args[0]
-                    for child_node in arg_list[::-1]:
-                        nodes_to_visit.append((child_node, node, node_depth + 1))
-                else:
-                    for child_node in node._args[::-1]:
-                        nodes_to_visit.append((child_node, node, node_depth + 1))
-
+            printed_tuple = (node._states[node._id].name)
+            print((node_depth * 4) * " ","|_",printed_tuple)
+            if isinstance(node._args[0], list):
+                arg_list = node._args[0]
+                for child_node in arg_list[::-1]:
+                    nodes_to_visit.append((child_node, node_depth + 1))
             else:
-                printed_tuple = (node_tuple[0],node_tuple[1],node_tuple[2])
-                print((node_depth * 4) * " ","|_",printed_tuple)
+                for child_node in node._args[::-1]:
+                    nodes_to_visit.append((child_node, node_depth + 1))
 
+        else:
+            printed_tuple = (node_tuple[0])
+            print((node_depth * 4) * " ","|_",printed_tuple)
 
 #
 # Classical ADTs
