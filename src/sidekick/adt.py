@@ -1,5 +1,6 @@
 import operator as op
-
+import sys
+import io
 
 def flip(f):
     return lambda x, y: f(y, x)
@@ -63,7 +64,7 @@ class State:
 
     def __ror__(self, other):
         bases = self._default_bases
-        
+
         if isinstance(other, UnionMeta):
             return UnionMeta._from_states(list(other._states) + [self], bases)
         return NotImplemented
@@ -342,35 +343,41 @@ class Node(metaclass=UnionMeta):
         else:
             raise ValueError('missing patterns: %s' % (names - keys))
 
-def pretty_print(self):
-    visited_nodes = {}
-    nodes_to_visit = []
-    id = 1
-    depth = 1
-    root_node = (self, depth)
+    def pretty_print(self, file=sys.stdout):
+        visited_nodes = {}
+        nodes_to_visit = []
+        id = 1
+        depth = 1
+        root_node = (self, depth)
 
-    nodes_to_visit.append(root_node)
+        nodes_to_visit.append(root_node)
 
-    while len(nodes_to_visit) != 0:
-        node_tuple = nodes_to_visit.pop()
-        node = node_tuple[0]
-        node_depth = node_tuple[1]
+        while len(nodes_to_visit) != 0:
+            node_tuple = nodes_to_visit.pop()
+            node = node_tuple[0]
+            node_depth = node_tuple[1]
 
-        if isinstance(node, Node):
+            if isinstance(node, Node):
 
-            printed_tuple = (node._states[node._id].name)
-            print((node_depth * 4) * " ","|_",printed_tuple)
-            if isinstance(node._args[0], list):
-                arg_list = node._args[0]
-                for child_node in arg_list[::-1]:
-                    nodes_to_visit.append((child_node, node_depth + 1))
+                printed_tuple = (node._states[node._id].name)
+                print((node_depth * 4) * " ","|_",printed_tuple, file=file)
+                if isinstance(node._args[0], list):
+                    arg_list = node._args[0]
+                    for child_node in arg_list[::-1]:
+                        nodes_to_visit.append((child_node, node_depth + 1))
+                else:
+                    for child_node in node._args[::-1]:
+                        nodes_to_visit.append((child_node, node_depth + 1))
+
             else:
-                for child_node in node._args[::-1]:
-                    nodes_to_visit.append((child_node, node_depth + 1))
+                printed_tuple = (node_tuple[0])
+                print((node_depth * 4) * " ","|_",printed_tuple, file=file)
 
-        else:
-            printed_tuple = (node_tuple[0])
-            print((node_depth * 4) * " ","|_",printed_tuple)
+    def pretty_repr(self):
+        file = io.StringIO()
+        self.pretty_print(file)
+        return file.getvalue()
+
 
 #
 # Classical ADTs
